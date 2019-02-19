@@ -33,6 +33,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
+import android.provider.MediaStore.Video;
+import android.database.Cursor;
+
+
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.Arguments;
@@ -76,7 +80,7 @@ public class Trimmer {
 
   private static final String LOG_TAG = "RNTrimmerManager";
   private static final String FFMPEG_FILE_NAME = "ffmpeg";
-  private static final String FFMPEG_SHA1 = "77ae380db4bf56d011eca9ef9f20d397c0467aec";
+  private static final String FFMPEG_SHA1 = "";
 
   private static boolean ffmpegLoaded = false;
   private static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -175,6 +179,27 @@ public class Trimmer {
 
   }
 
+  private static class CpuArchHelper {
+    public static final String X86_CPU = "x86";
+    public static final String X86_64_CPU = "x86_64";
+    public static final String ARM_64_CPU = "arm64-v8a";
+    public static final String ARM_V7_CPU = "armeabi-v7a";
+
+    public static String getCpuArch() throws Exception{
+
+      switch (Build.CPU_ABI) {
+        case X86_CPU:
+        case X86_64_CPU:
+          return "x86";
+        case ARM_64_CPU:
+        case ARM_V7_CPU:
+          return "arm";
+        default:
+          throw new Exception("Unsupported device architecture for ffmpeg");
+      }
+    }
+  }
+
 
   private static class LoadFfmpegAsyncTaskParams {
     Context ctx;
@@ -186,6 +211,7 @@ public class Trimmer {
 
   private static class LoadFfmpegAsyncTask extends AsyncTask<LoadFfmpegAsyncTaskParams, Void, Void> {
 
+    
     @Override
     protected Void doInBackground(LoadFfmpegAsyncTaskParams... params) {
       Context ctx = params[0].ctx;
@@ -201,7 +227,7 @@ public class Trimmer {
           byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
 
           int n;
-          InputStream ffmpegInAssets = ctx.getAssets().open("armeabi-v7a" + File.separator + FFMPEG_FILE_NAME);
+          InputStream ffmpegInAssets = ctx.getAssets().open(CpuArchHelper.getCpuArch() + File.separator + FFMPEG_FILE_NAME);
           while(END_OF_FILE != (n = ffmpegInAssets.read(buffer))) {
             ffmpegStreamToDataDir.write(buffer, 0, n);
           }
@@ -212,6 +238,10 @@ public class Trimmer {
           ffmpegInAssets.close();
         }
       } catch (IOException e) {
+        Log.d(LOG_TAG, "Failed to copy ffmpeg" + e.toString());
+        ffmpegLoaded = false;
+        return null;
+      } catch (Exception e){
         Log.d(LOG_TAG, "Failed to copy ffmpeg" + e.toString());
         ffmpegLoaded = false;
         return null;
@@ -362,6 +392,20 @@ public class Trimmer {
     String source = options.getString("source");
     String startTime = options.getString("startTime");
     String endTime = options.getString("endTime");
+
+    if(source.startsWith("content://")){
+        String filePath = null;
+
+        String[] proj = { Video.VideoColumns.DATA };
+
+        Cursor cursor = ctx.getContentResolver().query(Uri.parse(source), proj, null, null, null);
+
+        if(cursor.moveToFirst()) {
+            int column_index = cursor.getColumnIndexOrThrow(Video.VideoColumns.DATA);
+            filePath = cursor.getString(column_index);
+        }
+        source = filePath;
+    }
 
     final File tempFile = createTempFile("mp4", promise, ctx);
 
@@ -746,7 +790,7 @@ public class Trimmer {
     Log.d(LOG_TAG, "Merging in progress.");
 
     ArrayList<String> cmd = new ArrayList<String>();
-    cmd.add("-y"); // NOTE: OVERWRITE OUTPUT FILE
+    //cmd.add("-y"); // NOTE: OVERWRITE OUTPUT FILE
 
     for (int i = 0; i < videoFiles.size(); i++) {
       cmd.add("-i");
