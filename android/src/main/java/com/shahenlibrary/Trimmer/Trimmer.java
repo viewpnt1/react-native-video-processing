@@ -80,7 +80,8 @@ public class Trimmer {
 
   private static final String LOG_TAG = "RNTrimmerManager";
   private static final String FFMPEG_FILE_NAME = "ffmpeg";
-  private static final String FFMPEG_SHA1 = "";
+  private static final String FFMPEG_SHA1_X86 = "16b57552a5dca13d92577d7adfdb98bdb960515a";
+  private static final String FFMPEG_SHA1_ARM = "ce514001bd44c851ca2198b8a4ead6e8113493d5";
 
   private static boolean ffmpegLoaded = false;
   private static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -222,7 +223,11 @@ public class Trimmer {
       // TODO: MAKE SURE THAT WHEN WE UPDATE FFMPEG AND USER UPDATES APP IT WILL LOAD NEW FFMPEG (IT MUST OVERWRITE OLD FFMPEG)
       try {
         File ffmpegFile = new File(filesDir, FFMPEG_FILE_NAME);
-        if ( !(ffmpegFile.exists() && getSha1FromFile(ffmpegFile).equalsIgnoreCase(FFMPEG_SHA1)) ) {
+
+        String loadedFfmpegSHA1 = CpuArchHelper.getCpuArch() == "x86" ? FFMPEG_SHA1_X86 :  CpuArchHelper.getCpuArch() == "arm" ? FFMPEG_SHA1_ARM : "";
+        String existingFfmpegSHA1 = getSha1FromFile(ffmpegFile);
+
+        if ( !(ffmpegFile.exists() && existingFfmpegSHA1.equalsIgnoreCase(loadedFfmpegSHA1)) ) {
           final FileOutputStream ffmpegStreamToDataDir = new FileOutputStream(ffmpegFile);
           byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
 
@@ -790,7 +795,7 @@ public class Trimmer {
     Log.d(LOG_TAG, "Merging in progress.");
 
     ArrayList<String> cmd = new ArrayList<String>();
-    //cmd.add("-y"); // NOTE: OVERWRITE OUTPUT FILE
+    cmd.add("-y"); // NOTE: OVERWRITE OUTPUT FILE
 
     for (int i = 0; i < videoFiles.size(); i++) {
       cmd.add("-i");
