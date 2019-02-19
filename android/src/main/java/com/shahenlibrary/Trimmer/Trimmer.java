@@ -297,7 +297,7 @@ public class Trimmer {
 
       float aspectRatio = (float)width / (float)height;
 
-      int resizeWidth = 200;
+      int resizeWidth = 300;
       int resizeHeight = Math.round(resizeWidth / aspectRatio);
 
       float scaleWidth = ((float) resizeWidth) / width;
@@ -318,7 +318,7 @@ public class Trimmer {
       mx.postRotate(orientation - 360);
 
       for (int i = 0; i < duration; i += duration / 10) {
-        Bitmap frame = retriever.getFrameAtTime(i * 1000);
+        Bitmap frame = retriever.getFrameAtTime(i * 1000, FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
 
         if (frame == null) {
           continue;
@@ -327,7 +327,7 @@ public class Trimmer {
 
         Bitmap normalizedBmp = Bitmap.createBitmap(currBmp, 0, 0, resizeWidth, resizeHeight, mx, true);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        normalizedBmp.compress(Bitmap.CompressFormat.PNG, 90, byteArrayOutputStream);
+        normalizedBmp.compress(Bitmap.CompressFormat.PNG, 75, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
         String encoded = "data:image/png;base64," + Base64.encodeToString(byteArray, Base64.DEFAULT);
         images.pushString(encoded);
