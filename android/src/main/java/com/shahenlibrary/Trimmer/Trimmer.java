@@ -590,42 +590,63 @@ public class Trimmer {
 
   static void getPreviewImageAtPosition(String source, double sec, String format, final Promise promise, ReactApplicationContext ctx) {
     Bitmap bmp = null;
-    int orientation = 0;
     FFmpegMediaMetadataRetriever metadataRetriever = new FFmpegMediaMetadataRetriever();
+
+    int duration;
+    int width;
+    int height;
+    int orientation;
+
     try {
       FFmpegMediaMetadataRetriever.IN_PREFERRED_CONFIG = Bitmap.Config.ARGB_8888;
       metadataRetriever.setDataSource(source);
 
-      bmp = metadataRetriever.getFrameAtTime((long) (sec * 1000000));
+      bmp = metadataRetriever.getFrameAtTime((long) (sec * 1000000), FFmpegMediaMetadataRetriever.OPTION_CLOSEST);      
+      
+      duration = Integer.parseInt(metadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION));
+      width = Integer.parseInt(metadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+      height = Integer.parseInt(metadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+      orientation = Integer.parseInt(metadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION));
+
+      
       if(bmp == null){
         promise.reject("Failed to get preview at requested position.");
         return;
       }
 
       // NOTE: FIX ROTATED BITMAP
-      orientation = Integer.parseInt(metadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION));
     } finally {
       metadataRetriever.release();
     }
 
-    if ( orientation != 0 ) {
-      Matrix matrix = new Matrix();
-      matrix.postRotate(orientation);
-      bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
-    }
+    float aspectRatio = (float)width / (float)height;
+
+    int resizeWidth = 640;
+    int resizeHeight = Math.round(resizeWidth / aspectRatio);
+
+    float scaleWidth = ((float) resizeWidth) / width;
+    float scaleHeight = ((float) resizeHeight) / height;
+
+    Matrix matrix = new Matrix();
+    matrix.postRotate(orientation - 360);
+    matrix.postScale(scaleWidth, scaleHeight);
+    bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
     WritableMap event = Arguments.createMap();
 
     if ( format == null || (format != null && format.equals("base64")) ) {
-      bmp.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+
+      bmp.compress(Bitmap.CompressFormat.PNG, 50, byteArrayOutputStream);
       byte[] byteArray = byteArrayOutputStream .toByteArray();
       String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
 
       event.putString("image", encoded);
     } else if ( format.equals("JPEG") ) {
-      bmp.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+      Bitmap currBmp = Bitmap.createScaledBitmap(bmp, resizeWidth, resizeHeight, false);
+      Bitmap normalizedBmp = Bitmap.createBitmap(currBmp, 0, 0, resizeWidth, resizeHeight, matrix, true);
+      normalizedBmp.compress(Bitmap.CompressFormat.JPEG, 50, byteArrayOutputStream);
       byte[] byteArray = byteArrayOutputStream.toByteArray();
 
       File tempFile = createTempFile("jpeg", promise, ctx);
