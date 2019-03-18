@@ -81,7 +81,7 @@ public class Trimmer {
   private static final String LOG_TAG = "RNTrimmerManager";
   private static final String FFMPEG_FILE_NAME = "ffmpeg";
   private static final String FFMPEG_SHA1_X86 = "16b57552a5dca13d92577d7adfdb98bdb960515a";
-  private static final String FFMPEG_SHA1_ARM = "ce514001bd44c851ca2198b8a4ead6e8113493d5";
+  private static final String FFMPEG_SHA1_ARM = "1378523e7e58109f54b73b4cef2d4cd67c216137";
 
   private static boolean ffmpegLoaded = false;
   private static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -194,7 +194,7 @@ public class Trimmer {
           return "x86";
         case ARM_64_CPU:
         case ARM_V7_CPU:
-          return "arm";
+          return "armeabi-v7a";
         default:
           throw new Exception("Unsupported device architecture for ffmpeg");
       }
@@ -224,7 +224,7 @@ public class Trimmer {
       try {
         File ffmpegFile = new File(filesDir, FFMPEG_FILE_NAME);
 
-        String loadedFfmpegSHA1 = CpuArchHelper.getCpuArch() == "x86" ? FFMPEG_SHA1_X86 :  CpuArchHelper.getCpuArch() == "arm" ? FFMPEG_SHA1_ARM : "";
+        String loadedFfmpegSHA1 = CpuArchHelper.getCpuArch() == "x86" ? FFMPEG_SHA1_X86 :  FFMPEG_SHA1_ARM;
         String existingFfmpegSHA1 = getSha1FromFile(ffmpegFile);
 
         if ( !(ffmpegFile.exists() && existingFfmpegSHA1.equalsIgnoreCase(loadedFfmpegSHA1)) ) {
@@ -318,7 +318,7 @@ public class Trimmer {
       mx.postRotate(orientation - 360);
 
       for (int i = 0; i < duration; i += duration / 10) {
-        Bitmap frame = retriever.getFrameAtTime(i * 1000, FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
+        Bitmap frame = retriever.getFrameAtTime(i * 1000);
 
         if (frame == null) {
           continue;
@@ -327,7 +327,7 @@ public class Trimmer {
 
         Bitmap normalizedBmp = Bitmap.createBitmap(currBmp, 0, 0, resizeWidth, resizeHeight, mx, true);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        normalizedBmp.compress(Bitmap.CompressFormat.PNG, 75, byteArrayOutputStream);
+        normalizedBmp.compress(Bitmap.CompressFormat.PNG, 80, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
         String encoded = "data:image/png;base64," + Base64.encodeToString(byteArray, Base64.DEFAULT);
         images.pushString(encoded);
@@ -554,7 +554,7 @@ public class Trimmer {
       cmd.add("-vf");
       cmd.add("scale=" + Integer.toString(width) + ":" + Integer.toString(height));
     }
-
+    cmd.add("-threads 0");
     cmd.add("-preset");
     cmd.add("ultrafast");
     cmd.add("-pix_fmt");
