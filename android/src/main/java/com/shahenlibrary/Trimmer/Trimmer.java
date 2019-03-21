@@ -554,7 +554,6 @@ public class Trimmer {
       cmd.add("-vf");
       cmd.add("scale=" + Integer.toString(width) + ":" + Integer.toString(height));
     }
-    cmd.add("-threads 0");
     cmd.add("-preset");
     cmd.add("ultrafast");
     cmd.add("-pix_fmt");
