@@ -80,8 +80,8 @@ public class Trimmer {
 
   private static final String LOG_TAG = "RNTrimmerManager";
   private static final String FFMPEG_FILE_NAME = "ffmpeg";
-  private static final String FFMPEG_SHA1_X86 = "16b57552a5dca13d92577d7adfdb98bdb960515a";
-  private static final String FFMPEG_SHA1_ARM = "1378523e7e58109f54b73b4cef2d4cd67c216137";
+  private static final String FFMPEG_SHA1_X86 = "4a8b5cb64b56d36bc87193fe4aa890177716ac76";
+  private static final String FFMPEG_SHA1_ARM = "46ce41d0696341668244b3f90c4da0cb6d4af36f";
 
   private static boolean ffmpegLoaded = false;
   private static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -191,10 +191,10 @@ public class Trimmer {
       switch (Build.CPU_ABI) {
         case X86_CPU:
         case X86_64_CPU:
-          return "x86";
+          return "x86_64";
         case ARM_64_CPU:
         case ARM_V7_CPU:
-          return "armeabi-v7a";
+          return "arm64";
         default:
           throw new Exception("Unsupported device architecture for ffmpeg");
       }
