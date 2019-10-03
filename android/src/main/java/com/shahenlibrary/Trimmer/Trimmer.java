@@ -80,8 +80,9 @@ public class Trimmer {
 
   private static final String LOG_TAG = "RNTrimmerManager";
   private static final String FFMPEG_FILE_NAME = "ffmpeg";
-  private static final String FFMPEG_SHA1_X86 = "4a8b5cb64b56d36bc87193fe4aa890177716ac76";
-  private static final String FFMPEG_SHA1_ARM = "46ce41d0696341668244b3f90c4da0cb6d4af36f";
+  private static final String FFMPEG_SHA1_X86_64 = "4a8b5cb64b56d36bc87193fe4aa890177716ac76";
+  private static final String FFMPEG_SHA1_ARM_64 = "46ce41d0696341668244b3f90c4da0cb6d4af36f";
+  private static final String FFMPEG_SHA1_ARM_32 = "77ae380db4bf56d011eca9ef9f20d397c0467aec";
 
   private static boolean ffmpegLoaded = false;
   private static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -181,7 +182,6 @@ public class Trimmer {
   }
 
   private static class CpuArchHelper {
-    public static final String X86_CPU = "x86";
     public static final String X86_64_CPU = "x86_64";
     public static final String ARM_64_CPU = "arm64-v8a";
     public static final String ARM_V7_CPU = "armeabi-v7a";
@@ -193,8 +193,9 @@ public class Trimmer {
         case X86_64_CPU:
           return "x86_64";
         case ARM_64_CPU:
-        case ARM_V7_CPU:
           return "arm64";
+        case ARM_V7_CPU:
+          return "armeabi-v7a"
         default:
           throw new Exception("Unsupported device architecture for ffmpeg");
       }
@@ -224,7 +225,15 @@ public class Trimmer {
       try {
         File ffmpegFile = new File(filesDir, FFMPEG_FILE_NAME);
 
-        String loadedFfmpegSHA1 = CpuArchHelper.getCpuArch() == "x86" ? FFMPEG_SHA1_X86 :  FFMPEG_SHA1_ARM;
+        String loadedFfmpegSHA1 = null;
+        switch(CpuArchHelper.getCpuArch()){
+            case "x86" : loadedFfmpegSHA1 = FFMPEG_SHA1_X86_64; break;
+            case "arm64" : loadedFfmpegSHA1 = FFMPEG_SHA1_ARM_64; break;
+            case "armeabi-v7a" : loadedFfmpegSHA1 = FFMPEG_SHA1_ARM_32; break;
+            default: Log.d(LOG_TAG, "Failed to load ffmpeg" + e.toString());
+                    ffmpegLoaded = false;
+                    return null;
+        }
         String existingFfmpegSHA1 = getSha1FromFile(ffmpegFile);
 
         if ( !(ffmpegFile.exists() && existingFfmpegSHA1.equalsIgnoreCase(loadedFfmpegSHA1)) ) {
@@ -241,6 +250,7 @@ public class Trimmer {
           ffmpegStreamToDataDir.close();
 
           ffmpegInAssets.close();
+          Log.d(LOG_TAG, "Copied ffmpeg from assets "+ loadedFfmpegSHA1);  
         }
       } catch (IOException e) {
         Log.d(LOG_TAG, "Failed to copy ffmpeg" + e.toString());
