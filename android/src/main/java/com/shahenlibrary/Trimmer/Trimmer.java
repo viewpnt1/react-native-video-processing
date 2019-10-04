@@ -195,7 +195,7 @@ public class Trimmer {
         case ARM_64_CPU:
           return "arm64";
         case ARM_V7_CPU:
-          return "armeabi-v7a"
+          return "armeabi-v7a";
         default:
           throw new Exception("Unsupported device architecture for ffmpeg");
       }
