@@ -189,7 +189,6 @@ public class Trimmer {
     public static String getCpuArch() throws Exception{
 
       switch (Build.CPU_ABI) {
-        case X86_CPU:
         case X86_64_CPU:
           return "x86_64";
         case ARM_64_CPU:
@@ -230,7 +229,7 @@ public class Trimmer {
             case "x86" : loadedFfmpegSHA1 = FFMPEG_SHA1_X86_64; break;
             case "arm64" : loadedFfmpegSHA1 = FFMPEG_SHA1_ARM_64; break;
             case "armeabi-v7a" : loadedFfmpegSHA1 = FFMPEG_SHA1_ARM_32; break;
-            default: Log.d(LOG_TAG, "Failed to load ffmpeg" + e.toString());
+            default: Log.d(LOG_TAG, "Failed to determine architecture for ffmpeg");
                     ffmpegLoaded = false;
                     return null;
         }
